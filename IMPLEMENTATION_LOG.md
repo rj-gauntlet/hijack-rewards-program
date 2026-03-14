@@ -46,3 +46,29 @@
   - `serverless-v2/services/rewards-api/package.json` — NestJS deps, TypeScript, updated scripts and jest config
 - **Dependencies Added:** @nestjs/core, @nestjs/common, @nestjs/platform-express, @nestjs/swagger, reflect-metadata, rxjs, class-validator, class-transformer, typescript, ts-jest, ts-node, @nestjs/cli, @nestjs/testing, @types/node, @types/express, @types/jest
 - **Notes:** Pure business logic modules (points calculator, tier logic, milestone detector, month-key utils, API response builders) were developed and tested in a separate pre-build workspace before being copied into the NestJS project. All pass in the NestJS context.
+
+## Phase 2: Points Engine — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 9/9 complete
+- **Tests:** 130 total passing (16 new in this phase)
+  - PointsService: 16 tests (award flow, rewards summary, history pagination, error handling)
+  - All Phase 1 tests: 114 passing (regression verified)
+- **Deviations:**
+  - Used offset-based pagination simulated in code (fetch all from DynamoDB query, then `slice(offset, offset + limit)`) rather than DynamoDB-native cursor pagination. Acceptable at our scale (~175 players, max ~10K transactions per player). For production scale, would implement cursor-based pagination with `ExclusiveStartKey`. (minor)
+  - Integration test replaced with comprehensive unit tests using mocked DynamoDB. Integration tests against real DynamoDB Local will be covered in Phase 3 smoke testing. (minor)
+  - `POST /api/v1/points/award` is not auth-guarded — per PRD it's called by the game processor (server-to-server), not by players directly. Player-facing endpoints (`GET /player/rewards`, `GET /player/rewards/history`) are guarded. (intentional deviation — matches PRD intent)
+- **Files Created:**
+  - `src/points/dto/award-points.dto.ts` — DTO with class-validator decorators
+  - `src/points/points.service.ts` — Core points business logic (award, summary, history, auto-create player, month rollover)
+  - `src/points/points.controller.ts` — REST endpoints with Swagger decorators
+  - `src/points/points.module.ts` — NestJS module
+  - `src/points/points.service.spec.ts` — 16 unit tests
+- **Files Modified:**
+  - `src/app.module.ts` — Added PointsModule import
+- **Key Implementation Details:**
+  - `awardPoints()` auto-creates a player in `rewards-players` if not found (first-time player)
+  - Month rollover detection: if `currentMonthKey` on the player record differs from the current month, resets `monthlyPoints` to 0
+  - Tier upgrade check runs after each award; if threshold crossed, updates player tier immediately
+  - Milestone detection runs after each award; returns crossed thresholds in the response
+  - Ledger entries use `timestamp` (Number) as DynamoDB sort key + `transactionId` (UUID) as a regular attribute
+- **Notes:** The PointsService integrates all pre-built pure functions (calculatePoints, checkTierUpgrade, detectMilestones, getCurrentMonthKey) into a cohesive flow. The tier upgrade and milestone detection are embedded in the award flow to avoid extra DynamoDB reads.
