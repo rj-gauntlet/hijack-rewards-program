@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { calculatePoints } from './points-calculator';
-import { checkTierUpgrade } from '../tiers/tier-logic';
+import { checkTierUpgrade, getTierUpgradeMessage } from '../tiers/tier-logic';
 import { detectMilestones } from '../tiers/milestone-detector';
 import { getCurrentMonthKey } from '../common/utils/month-key';
+import { getMilestoneMessage, type MilestoneThreshold } from '../common/constants/milestones';
 import {
   Tier,
   TIER_NAMES,
@@ -19,7 +21,11 @@ import { randomUUID } from 'crypto';
 export class PointsService {
   private readonly logger = new Logger(PointsService.name);
 
-  constructor(private readonly dynamo: DynamoService) {}
+  constructor(
+    private readonly dynamo: DynamoService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async awardPoints(input: AwardPointsInput): Promise<AwardPointsResult> {
     const monthKey = getCurrentMonthKey();
@@ -74,6 +80,24 @@ export class PointsService {
     );
 
     const milestonesReached = detectMilestones(previousMonthlyTotal, newMonthlyTotal);
+
+    if (tierUpgrade) {
+      await this.notificationsService.createNotification(
+        input.playerId,
+        'tier_upgrade',
+        `Reached ${TIER_NAMES[tierUpgrade.newTier]} tier!`,
+        getTierUpgradeMessage(tierUpgrade.previousTier, tierUpgrade.newTier),
+      );
+    }
+
+    for (const milestone of milestonesReached) {
+      await this.notificationsService.createNotification(
+        input.playerId,
+        'milestone',
+        `${milestone.toLocaleString()} points milestone!`,
+        getMilestoneMessage(milestone as MilestoneThreshold),
+      );
+    }
 
     this.logger.log(
       `Awarded ${calculation.earnedPoints} pts to ${input.playerId} ` +

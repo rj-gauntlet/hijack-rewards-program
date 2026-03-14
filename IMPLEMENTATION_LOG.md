@@ -72,3 +72,39 @@
   - Milestone detection runs after each award; returns crossed thresholds in the response
   - Ledger entries use `timestamp` (Number) as DynamoDB sort key + `transactionId` (UUID) as a regular attribute
 - **Notes:** The PointsService integrates all pre-built pure functions (calculatePoints, checkTierUpgrade, detectMilestones, getCurrentMonthKey) into a cohesive flow. The tier upgrade and milestone detection are embedded in the award flow to avoid extra DynamoDB reads.
+
+## Phase 3: Tiers, Notifications & Minimal Dashboard — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 13/13 complete
+- **Tests:** 146 total passing (16 new in this phase)
+  - NotificationsService: 6 tests (create, list all, list unread, dismiss, not-found)
+  - SystemService: 8 tests (reset points, tier history snapshot, tier drop with floor protection, downgrade notification, Bronze no-drop, met-threshold no-drop, mixed players, empty scan)
+  - PointsService: +2 tests (notification on tier upgrade, notification on milestone)
+  - All prior tests: 130 passing (regression verified)
+- **Deviations:**
+  - TiersModule not created as a separate NestJS module — tier logic is pure functions consumed directly by PointsService and SystemService. Creating a NestJS module wrapper would add indirection without value. (minor)
+  - Frontend `vite-env.d.ts` was missing from skeleton — created to fix `import.meta.env` TypeScript errors. (minor)
+  - Store updated to restore `playerId` from localStorage on load (skeleton didn't persist login across refreshes). (minor)
+- **Backend Files Created:**
+  - `src/notifications/notifications.service.ts` — Create, list (with unread filter), dismiss
+  - `src/notifications/notifications.controller.ts` — REST endpoints with auth guard
+  - `src/notifications/notifications.module.ts`
+  - `src/notifications/notifications.service.spec.ts` — 6 tests
+  - `src/system/system.service.ts` — Monthly reset with floor protection, TierHistory writes, downgrade notifications
+  - `src/system/system.controller.ts` — POST /system/monthly-reset
+  - `src/system/system.module.ts`
+  - `src/system/system.service.spec.ts` — 8 tests
+- **Backend Files Modified:**
+  - `src/points/points.service.ts` — Added NotificationsService injection, creates notifications on tier upgrade and milestone
+  - `src/points/points.module.ts` — Imports NotificationsModule
+  - `src/points/points.service.spec.ts` — Added NotificationsService mock and 2 notification tests
+  - `src/app.module.ts` — Added NotificationsModule and SystemModule imports
+- **Frontend Files Created:**
+  - `src/vite-env.d.ts` — Vite type reference
+  - `src/api/rewardsApi.ts` — RTK Query API slice with getRewardsSummary and getPointsHistory endpoints
+  - `src/components/SummaryCard.tsx` — Tier badge, progress bar, monthly/lifetime points
+  - `src/components/PointsHistory.tsx` — Paginated transaction table with tier chips
+- **Frontend Files Modified:**
+  - `src/store.ts` — Added RTK Query reducer and middleware, persist auth from localStorage
+  - `src/pages/Dashboard.tsx` — Replaced placeholder with SummaryCard + PointsHistory, auth redirect, logout button
+- **Notes:** The notification flow is now fully wired: tier upgrades and milestones create notifications during awardPoints(), and monthly reset creates downgrade notifications. The React dashboard shows live data from the API via RTK Query with automatic caching and refetching.

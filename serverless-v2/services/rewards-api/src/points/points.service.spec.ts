@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PointsService } from './points.service';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Tier } from '../common/constants/tiers';
 import type { AwardPointsInput } from '../common/types';
 
@@ -10,6 +11,12 @@ const mockDynamo = {
   put: jest.fn(),
   update: jest.fn(),
   query: jest.fn(),
+};
+
+const mockNotifications = {
+  createNotification: jest.fn(),
+  getNotifications: jest.fn(),
+  dismissNotification: jest.fn(),
 };
 
 describe('PointsService', () => {
@@ -22,6 +29,7 @@ describe('PointsService', () => {
       providers: [
         PointsService,
         { provide: DynamoService, useValue: mockDynamo },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
@@ -138,6 +146,40 @@ describe('PointsService', () => {
         previousTier: Tier.BRONZE,
         newTier: Tier.SILVER,
       });
+    });
+
+    it('creates a notification on tier upgrade', async () => {
+      mockDynamo.get.mockResolvedValue(
+        makeBronzePlayer({ monthlyPoints: 499, lifetimePoints: 499 }),
+      );
+      mockDynamo.put.mockResolvedValue(undefined);
+      mockDynamo.update.mockResolvedValue(undefined);
+
+      await service.awardPoints(makeInput({ bigBlind: 1.0 }));
+
+      expect(mockNotifications.createNotification).toHaveBeenCalledWith(
+        'player-001',
+        'tier_upgrade',
+        expect.stringContaining('Silver'),
+        expect.stringContaining('Silver'),
+      );
+    });
+
+    it('creates a notification on milestone crossing', async () => {
+      mockDynamo.get.mockResolvedValue(
+        makeBronzePlayer({ monthlyPoints: 498, lifetimePoints: 498 }),
+      );
+      mockDynamo.put.mockResolvedValue(undefined);
+      mockDynamo.update.mockResolvedValue(undefined);
+
+      await service.awardPoints(makeInput({ bigBlind: 1.0 }));
+
+      expect(mockNotifications.createNotification).toHaveBeenCalledWith(
+        'player-001',
+        'milestone',
+        expect.stringContaining('500'),
+        expect.any(String),
+      );
     });
 
     it('applies tier multiplier for Silver players', async () => {

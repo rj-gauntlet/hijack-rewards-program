@@ -1,13 +1,19 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { rewardsApi } from './api/rewardsApi';
 
 interface AuthState {
   playerId: string | null;
   isAuthenticated: boolean;
 }
 
+const savedPlayerId = localStorage.getItem('playerId');
+
 const authSlice = createSlice({
   name: 'auth',
-  initialState: { playerId: null, isAuthenticated: false } as AuthState,
+  initialState: {
+    playerId: savedPlayerId,
+    isAuthenticated: !!savedPlayerId,
+  } as AuthState,
   reducers: {
     login(state, action: PayloadAction<string>) {
       state.playerId = action.payload;
@@ -16,6 +22,7 @@ const authSlice = createSlice({
     logout(state) {
       state.playerId = null;
       state.isAuthenticated = false;
+      localStorage.removeItem('playerId');
     },
   },
 });
@@ -25,7 +32,10 @@ export const { login, logout } = authSlice.actions;
 export const store = configureStore({
   reducer: {
     auth: authSlice.reducer,
+    [rewardsApi.reducerPath]: rewardsApi.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(rewardsApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
