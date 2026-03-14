@@ -108,3 +108,26 @@
   - `src/store.ts` — Added RTK Query reducer and middleware, persist auth from localStorage
   - `src/pages/Dashboard.tsx` — Replaced placeholder with SummaryCard + PointsHistory, auth redirect, logout button
 - **Notes:** The notification flow is now fully wired: tier upgrades and milestones create notifications during awardPoints(), and monthly reset creates downgrade notifications. The React dashboard shows live data from the API via RTK Query with automatic caching and refetching.
+
+## Phase 4: Leaderboard & Admin — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 10/10 complete
+- **Tests:** 168 total passing (22 new in this phase)
+  - LeaderboardService: 10 tests (sorting, rank assignment, limit, player rank inside/outside top N, tier names, empty list, enriched leaderboard)
+  - AdminService: 12 tests (full profile, adjust points credit/debit/floor-at-zero, ledger entry creation, player totals update, tier override with notification, not-found errors)
+  - All prior tests: 146 passing (regression verified)
+- **Deviations:** None
+- **Files Created:**
+  - `src/leaderboard/leaderboard.service.ts` — Scan-sort-slice leaderboard with player's own rank
+  - `src/leaderboard/leaderboard.controller.ts` — GET /api/v1/leaderboard (auth-guarded)
+  - `src/leaderboard/leaderboard.module.ts`
+  - `src/leaderboard/leaderboard.service.spec.ts` — 10 tests
+  - `src/admin/admin.service.ts` — Full profile, points adjust (audit trail), tier override (notification)
+  - `src/admin/admin.controller.ts` — All admin endpoints with @Roles('admin') guard
+  - `src/admin/admin.module.ts`
+  - `src/admin/admin.service.spec.ts` — 12 tests
+  - `src/admin/dto/adjust-points.dto.ts` — DTO with class-validator
+  - `src/admin/dto/tier-override.dto.ts` — DTO with class-validator
+- **Files Modified:**
+  - `src/app.module.ts` — Added LeaderboardModule and AdminModule
+- **Notes:** The leaderboard uses scan-on-read (acceptable for demo scale). Admin endpoints are fully role-guarded — non-admin tokens get 403 Forbidden. Tier override stores the override object on the player record for audit purposes.
