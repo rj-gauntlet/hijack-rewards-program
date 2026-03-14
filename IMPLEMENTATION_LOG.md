@@ -149,3 +149,16 @@
   - `src/api/rewardsApi.ts` — Added leaderboard, notifications (query + dismiss mutation), and tier-history endpoints
   - `src/pages/Dashboard.tsx` — 2-column responsive grid layout with all 4 widgets + notification bell in header
 - **Notes:** Dashboard layout uses MUI Grid: left column (7/12) for SummaryCard + PointsHistory, right column (5/12) for LeaderboardWidget + TierTimeline. NotificationBell uses RTK Query mutation to dismiss notifications with automatic cache invalidation.
+
+## Phase 6: Seed Data, Docs & Polish — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 7/8 complete (smoke test pending Docker availability)
+- **Tests:** 168 total passing (no new tests in this phase)
+- **Files Created:**
+  - `scripts/seed-rewards.js` — Replaced skeleton seed script with 175-player generator (6 months history, natural tier distribution, deterministic PRNG)
+  - `serverless-v2/services/rewards-api/README.md` — Setup, architecture, endpoints, request/response examples, implemented vs stubbed, project structure
+  - `docs/adr/ADR-001-nestjs-over-express.md`
+  - `docs/adr/ADR-002-dynamodb-multi-table.md`
+  - `docs/adr/ADR-003-scan-on-read-leaderboard.md`
+  - `docs/adr/ADR-004-tier-floor-protection.md`
+- **Notes:** The seed script generates 175 players with weighted profiles (3% whale, 32% grinder, 40% casual, 25% occasional) producing natural tier distribution. It limits transaction writes to 5000 entries to keep seed time under 30 seconds. ADRs cover the four key architectural decisions with context, rationale, consequences, and migration paths.
