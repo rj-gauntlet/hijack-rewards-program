@@ -1,0 +1,48 @@
+# Implementation Log
+
+## Phase 1: Bootstrap & Foundation — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 9/9 complete
+- **Tests:** 114 passing (5 test suites)
+  - Points calculator: 29 tests
+  - Tier logic: 40 tests
+  - Milestone detector: 17 tests
+  - Month-key utilities: 27 tests
+  - API response builders: 8 tests (note: Jest `it.each` counted individually = 114 total)
+- **Deviations:**
+  - Kept skeleton's `rewards-transactions` table schema (`timestamp` Number as SK) instead of planned ULID `transactionId` String SK — avoids modifying docker-compose table definitions that other challenge options may depend on. `transactionId` will be stored as a regular attribute. (minor)
+  - Docker Compose `rewards-api` command changed from `serverless offline` to `npm run build && npm run start:prod` for NestJS compatibility. Original serverless command preserved as `npm run start:serverless` script. (minor)
+  - `rewards-leaderboard` table already existed in docker-compose (not in `init-dynamodb.sh`) — added to init script for consistency. (minor)
+- **Files Created:**
+  - `serverless-v2/services/rewards-api/tsconfig.json` — TypeScript strict mode config
+  - `serverless-v2/services/rewards-api/nest-cli.json` — NestJS CLI config
+  - `serverless-v2/services/rewards-api/src/main.ts` — NestJS bootstrap (port 5000, CORS, Swagger)
+  - `serverless-v2/services/rewards-api/src/app.module.ts` — Root module
+  - `serverless-v2/services/rewards-api/src/health/health.controller.ts` — Health endpoints
+  - `serverless-v2/services/rewards-api/src/dynamo/dynamo.module.ts` — Global DynamoDB module
+  - `serverless-v2/services/rewards-api/src/dynamo/dynamo.service.ts` — DynamoDB CRUD wrapper
+  - `serverless-v2/services/rewards-api/src/common/constants/tiers.ts` — Tier enum, thresholds, multipliers, helpers
+  - `serverless-v2/services/rewards-api/src/common/constants/stakes.ts` — Stakes brackets, base points lookup
+  - `serverless-v2/services/rewards-api/src/common/constants/milestones.ts` — Milestone thresholds
+  - `serverless-v2/services/rewards-api/src/common/constants/index.ts` — Barrel export
+  - `serverless-v2/services/rewards-api/src/common/types/player.types.ts` — Player, PlayerRewards, TierOverride
+  - `serverless-v2/services/rewards-api/src/common/types/points.types.ts` — PointsLedgerEntry, AwardPointsInput, etc.
+  - `serverless-v2/services/rewards-api/src/common/types/notification.types.ts` — Notification, NotificationType
+  - `serverless-v2/services/rewards-api/src/common/types/api-response.types.ts` — ApiResponse, PaginatedResponse
+  - `serverless-v2/services/rewards-api/src/common/types/index.ts` — Barrel export
+  - `serverless-v2/services/rewards-api/src/common/utils/month-key.ts` — Month key utilities
+  - `serverless-v2/services/rewards-api/src/common/utils/api-response.ts` — Response builders
+  - `serverless-v2/services/rewards-api/src/common/guards/jwt-auth.guard.ts` — Stub JWT + X-Player-Id auth
+  - `serverless-v2/services/rewards-api/src/common/guards/roles.guard.ts` — Role-based access control
+  - `serverless-v2/services/rewards-api/src/common/decorators/roles.decorator.ts` — @Roles() decorator
+  - `serverless-v2/services/rewards-api/src/common/decorators/current-player.decorator.ts` — @CurrentPlayer() decorator
+  - `serverless-v2/services/rewards-api/src/points/points-calculator.ts` — Pure calculation function
+  - `serverless-v2/services/rewards-api/src/tiers/tier-logic.ts` — Upgrade + reset with floor protection
+  - `serverless-v2/services/rewards-api/src/tiers/milestone-detector.ts` — Milestone crossing detection
+  - Test specs: 5 `.spec.ts` files matching above
+- **Files Modified:**
+  - `docker-compose.yml` — Added `rewards-tier-history` table creation, updated rewards-api env vars and command
+  - `scripts/init-dynamodb.sh` — Added leaderboard, notifications, tier-history table creation
+  - `serverless-v2/services/rewards-api/package.json` — NestJS deps, TypeScript, updated scripts and jest config
+- **Dependencies Added:** @nestjs/core, @nestjs/common, @nestjs/platform-express, @nestjs/swagger, reflect-metadata, rxjs, class-validator, class-transformer, typescript, ts-jest, ts-node, @nestjs/cli, @nestjs/testing, @types/node, @types/express, @types/jest
+- **Notes:** Pure business logic modules (points calculator, tier logic, milestone detector, month-key utils, API response builders) were developed and tested in a separate pre-build workspace before being copied into the NestJS project. All pass in the NestJS context.

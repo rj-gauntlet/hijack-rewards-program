@@ -108,6 +108,16 @@ services:
           --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
           2>/dev/null || true
 
+        aws dynamodb create-table \
+          --endpoint-url http://dynamodb-local:8000 \
+          --table-name rewards-tier-history \
+          --attribute-definitions \
+            AttributeName=playerId,AttributeType=S \
+            AttributeName=monthKey,AttributeType=S \
+          --key-schema AttributeName=playerId,KeyType=HASH AttributeName=monthKey,KeyType=RANGE \
+          --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+          2>/dev/null || true
+
         # Streaks tables
         aws dynamodb create-table \
           --endpoint-url http://dynamodb-local:8000 \
@@ -299,16 +309,20 @@ services:
         condition: service_healthy
     environment:
       STAGE: local
+      PORT: "5000"
       DYNAMODB_ENDPOINT: http://dynamodb-local:8000
       REWARDS_PLAYERS_TABLE: rewards-players
       REWARDS_TRANSACTIONS_TABLE: rewards-transactions
+      REWARDS_NOTIFICATIONS_TABLE: rewards-notifications
+      REWARDS_LEADERBOARD_TABLE: rewards-leaderboard
+      REWARDS_TIER_HISTORY_TABLE: rewards-tier-history
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        npm install && npx serverless offline --config serverless.offline.yml --host 0.0.0.0
+        npm install && npm run build && npm run start:prod
 
   rewards-frontend:
     image: node:22-alpine
