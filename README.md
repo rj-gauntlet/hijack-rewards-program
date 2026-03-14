@@ -1,6 +1,8 @@
-# Hijack Poker — Technical Assignment
+# Hijack Poker Rewards Program
 
-Welcome to the Hijack Poker technical challenge. This repo provides a working serverless infrastructure skeleton that mirrors our production architecture. Your job is to build one of four challenge options on top of it.
+Loyalty rewards system for the Hijack Poker platform: players earn points from cash game play, progress through tiered status (Bronze → Silver → Gold → Platinum), and track rewards on a web dashboard. Includes a NestJS/Serverless API, React dashboard (Hijack black/orange theme), DynamoDB persistence, Redis caching, real-time notifications (SSE), and idempotent points award. Runs locally via Docker Compose.
+
+*(Based on the Hijack Poker technical assignment; this repo implements the Rewards challenge.)*
 
 ## Prerequisites
 

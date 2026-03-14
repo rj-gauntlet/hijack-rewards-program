@@ -1,8 +1,8 @@
 {
-  "name": "hijack-tech-assignment",
+  "name": "hijack-rewards-program",
   "version": "1.0.0",
   "private": true,
-  "description": "Hijack Poker Technical Assignment - Serverless Infrastructure",
+  "description": "Hijack Poker Rewards Program — loyalty points, tiers, leaderboard, and dashboard (NestJS API + React, DynamoDB, Redis)",
   "scripts": {
     "start:rewards": "docker compose --profile rewards up",
     "start:engine": "docker compose --profile engine up",
