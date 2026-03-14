@@ -284,6 +284,29 @@ async function seed() {
     });
   }
 
+  // Assign fixed IDs for walkthrough: rank 50 and rank 150 (outside top 10, outside top 100)
+  allPlayers.sort((a, b) => b.monthlyPoints - a.monthlyPoints);
+  const id50 = allPlayers[49].playerId;
+  const id150 = allPlayers[149].playerId;
+  const replace = (id) => {
+    if (id === id50) return 'walkthrough-rank-50';
+    if (id === id150) return 'walkthrough-rank-150';
+    return id;
+  };
+  allPlayers[49].playerId = 'walkthrough-rank-50';
+  allPlayers[149].playerId = 'walkthrough-rank-150';
+  allTransactions.forEach(t => { t.playerId = replace(t.playerId); });
+  allNotifications.forEach(n => { n.playerId = replace(n.playerId); });
+  allTierHistory.forEach(t => { t.playerId = replace(t.playerId); });
+
+  // Guarantee walkthrough-rank-50 has 3 notifications: 2 unread, 1 read (for demo)
+  const now = new Date().toISOString();
+  allNotifications.push(
+    { playerId: 'walkthrough-rank-50', notificationId: uuid(rng), type: 'milestone', title: '500 points milestone!', message: "You've earned 500 points this month!", isRead: false, createdAt: now },
+    { playerId: 'walkthrough-rank-50', notificationId: uuid(rng), type: 'tier_upgrade', title: 'Reached Silver tier!', message: "Congratulations! You've reached Silver tier!", isRead: false, createdAt: now },
+    { playerId: 'walkthrough-rank-50', notificationId: uuid(rng), type: 'tier_downgrade', title: 'Tier adjusted to Bronze', message: 'Your tier has been adjusted to Bronze. Keep playing!', isRead: true, createdAt: now },
+  );
+
   const tierDist = { Bronze: 0, Silver: 0, Gold: 0, Platinum: 0 };
   allPlayers.forEach(p => tierDist[TIER_NAMES[p.currentTier]]++);
 
@@ -293,6 +316,7 @@ async function seed() {
   console.log(`  Notifications: ${allNotifications.length}`);
   console.log(`  Tier history: ${allTierHistory.length}`);
   console.log(`  Tier distribution: ${JSON.stringify(tierDist)}`);
+  console.log(`  Walkthrough IDs: walkthrough-rank-50 (rank ~50), walkthrough-rank-150 (rank ~150)`);
 
   console.log(`\nWriting players...`);
   await batchWrite(TABLES.PLAYERS, allPlayers);

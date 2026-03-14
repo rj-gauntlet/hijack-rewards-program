@@ -38,7 +38,9 @@ export default function NotificationBell() {
   const [dismiss] = useDismissNotificationMutation();
 
   const unreadCount = data?.unreadCount ?? 0;
-  const notifications = data?.notifications ?? [];
+  const notifications = [...(data?.notifications ?? [])].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   const handleDismiss = async (notificationId: string) => {
     await dismiss(notificationId);
@@ -47,11 +49,16 @@ export default function NotificationBell() {
   return (
     <>
       <IconButton
-        color="inherit"
         onClick={(e) => setAnchorEl(e.currentTarget)}
         size="large"
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          color: '#fff',
+          '&:hover': { bgcolor: 'rgba(255, 107, 53, 0.2)', borderColor: 'primary.main', color: 'primary.main' },
+        }}
       >
-        <Badge badgeContent={unreadCount} color="secondary">
+        <Badge badgeContent={unreadCount} color="primary">
           <NotificationsIcon />
         </Badge>
       </IconButton>
@@ -73,7 +80,7 @@ export default function NotificationBell() {
             Notifications
           </Typography>
           {unreadCount > 0 && (
-            <Chip label={`${unreadCount} unread`} color="secondary" size="small" />
+            <Chip label={`${unreadCount} unread`} color="primary" size="small" />
           )}
         </Box>
         <Divider />
@@ -88,7 +95,7 @@ export default function NotificationBell() {
               <ListItem
                 key={n.notificationId}
                 sx={{
-                  bgcolor: n.isRead ? 'transparent' : 'rgba(108, 99, 255, 0.08)',
+                  bgcolor: n.isRead ? 'transparent' : 'rgba(255, 107, 53, 0.08)',
                   borderLeft: n.isRead ? 'none' : '3px solid',
                   borderColor: 'primary.main',
                 }}

@@ -5,9 +5,12 @@ import {
   Param,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import { Response } from 'express';
 import { NotificationsService } from './notifications.service';
+import { NotificationStreamService } from './notification-stream.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentPlayer, AuthenticatedPlayer } from '../common/decorators/current-player.decorator';
 import { createSuccessResponse } from '../common/utils/api-response';
@@ -18,7 +21,10 @@ import { createSuccessResponse } from '../common/utils/api-response';
 @ApiBearerAuth()
 @ApiSecurity('X-Player-Id')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly streamService: NotificationStreamService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -36,6 +42,28 @@ export class NotificationsController {
       unreadOnly,
     );
     return createSuccessResponse(result);
+  }
+
+  @Get('stream')
+  @ApiOperation({
+    summary: 'SSE stream for real-time notifications',
+    description: 'Server-Sent Events stream. New notifications are pushed as they are created.',
+  })
+  streamNotifications(
+    @CurrentPlayer() player: AuthenticatedPlayer,
+    @Res() res: Response,
+  ): void {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    const unregister = this.streamService.register(player.playerId, (notification) => {
+      res.write(`data: ${JSON.stringify(notification)}\n\n`);
+    });
+
+    res.on('close', () => unregister());
   }
 
   @Patch(':id/dismiss')

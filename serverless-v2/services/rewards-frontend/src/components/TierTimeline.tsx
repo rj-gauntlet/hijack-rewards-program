@@ -12,15 +12,17 @@ const TIER_LABELS: Record<number, string> = {
 const TIER_COLORS: Record<number, string> = {
   1: '#CD7F32',
   2: '#C0C0C0',
-  3: '#FFD700',
-  4: '#E5E4E2',
+  3: '#ff6b35',
+  4: '#D4E8F7',
 };
 
-const TIER_HEIGHT: Record<number, number> = {
-  1: 25,
-  2: 50,
-  3: 75,
-  4: 100,
+// Bar heights in px — clear hierarchy: Bronze shortest, Platinum tallest
+const BAR_MAX_HEIGHT = 100;
+const TIER_HEIGHT_PX: Record<number, number> = {
+  1: 22,
+  2: 48,
+  3: 74,
+  4: BAR_MAX_HEIGHT,
 };
 
 export default function TierTimeline() {
@@ -50,7 +52,7 @@ export default function TierTimeline() {
       <Paper sx={{ p: 3 }}>
         <Box display="flex" alignItems="center" gap={1} mb={2}>
           <TimelineIcon color="primary" />
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Tier History
           </Typography>
         </Box>
@@ -65,14 +67,14 @@ export default function TierTimeline() {
     <Paper sx={{ p: 3 }}>
       <Box display="flex" alignItems="center" gap={1} mb={2}>
         <TimelineIcon color="primary" />
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h6" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Tier History
         </Typography>
       </Box>
 
-      <Box display="flex" alignItems="flex-end" gap={1} height={140} mt={2}>
+      <Box display="flex" alignItems="flex-end" gap={1} mt={2} height={BAR_MAX_HEIGHT + 56}>
         {entries.map((entry) => {
-          const height = TIER_HEIGHT[entry.tier] || 25;
+          const heightPx = TIER_HEIGHT_PX[entry.tier] ?? 22;
           const color = TIER_COLORS[entry.tier] || '#666';
           const label = TIER_LABELS[entry.tier] || '?';
 
@@ -85,22 +87,24 @@ export default function TierTimeline() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 0.5,
+                height: BAR_MAX_HEIGHT + 40,
+                justifyContent: 'flex-end',
               }}
             >
-              <Typography variant="caption" fontWeight={600} sx={{ color }}>
-                {label}
-              </Typography>
               <Box
                 sx={{
                   width: '100%',
-                  height: `${height}%`,
+                  height: heightPx,
+                  minHeight: heightPx,
                   bgcolor: color,
                   borderRadius: '4px 4px 0 0',
-                  opacity: 0.85,
-                  transition: 'height 0.3s ease',
-                  minHeight: 20,
+                  opacity: 0.9,
+                  transition: 'height 0.2s ease',
                 }}
               />
+              <Typography variant="caption" fontWeight={600} sx={{ color }}>
+                {label}
+              </Typography>
               <Typography variant="caption" color="text.secondary">
                 {entry.monthKey}
               </Typography>

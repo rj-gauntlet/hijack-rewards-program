@@ -1,10 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express from 'express';
+import serverless from 'serverless-http';
 import { AppModule } from './app.module';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+let cachedHandler: ReturnType<typeof serverless> | null = null;
+
+async function bootstrapExpress(): Promise<express.Express> {
+  const expressApp = express();
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
   app.enableCors({
     origin: '*',
@@ -25,8 +31,8 @@ async function bootstrap() {
     .setTitle('Hijack Poker Rewards API')
     .setDescription(
       'Loyalty rewards system for the Hijack Poker platform. ' +
-      'Players earn points from cash game play, progress through tiers, ' +
-      'and track rewards on a web dashboard.',
+        'Players earn points from cash game play, progress through tiers, ' +
+        'and track rewards on a web dashboard.',
     )
     .setVersion('1.0')
     .addApiKey(
@@ -46,9 +52,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
 
-  const port = parseInt(process.env.PORT || '5000', 10);
-  await app.listen(port, '0.0.0.0');
-  console.log(`Rewards API running on http://0.0.0.0:${port}`);
-  console.log(`Swagger UI at http://0.0.0.0:${port}/api`);
+  await app.init();
+  return expressApp;
 }
-bootstrap();
+
+export const handler = async (event: unknown, context: unknown): Promise<unknown> => {
+  if (!cachedHandler) {
+    const expressApp = await bootstrapExpress();
+    cachedHandler = serverless(expressApp);
+  }
+  return cachedHandler(event as object, context as object);
+};

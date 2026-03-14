@@ -19,8 +19,8 @@ import type { RootState } from '../store';
 const TIER_COLORS: Record<string, string> = {
   Bronze: '#CD7F32',
   Silver: '#C0C0C0',
-  Gold: '#FFD700',
-  Platinum: '#E5E4E2',
+  Gold: '#ff6b35',
+  Platinum: '#D4E8F7',
 };
 
 export default function LeaderboardWidget() {
@@ -50,22 +50,22 @@ export default function LeaderboardWidget() {
     <Paper sx={{ p: 3 }}>
       <Box display="flex" alignItems="center" gap={1} mb={2}>
         <LeaderboardIcon color="primary" />
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h6" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Leaderboard
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto', textTransform: 'uppercase', fontWeight: 600 }}>
           {data.totalPlayers} players
         </Typography>
       </Box>
 
-      <TableContainer>
-        <Table size="small">
+      <TableContainer sx={{ overflowX: 'hidden' }}>
+        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHead>
             <TableRow>
-              <TableCell width={50}>#</TableCell>
-              <TableCell>Player</TableCell>
-              <TableCell>Tier</TableCell>
-              <TableCell align="right">Points</TableCell>
+              <TableCell align="center" sx={{ width: '12%' }}>#</TableCell>
+              <TableCell sx={{ width: '38%' }}>Player</TableCell>
+              <TableCell align="center" sx={{ width: '28%' }}>Tier</TableCell>
+              <TableCell align="right" sx={{ width: '22%' }}>Points</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -75,16 +75,18 @@ export default function LeaderboardWidget() {
                 <TableRow
                   key={entry.playerId}
                   sx={{
-                    bgcolor: isCurrentPlayer ? 'rgba(108, 99, 255, 0.15)' : undefined,
+                    bgcolor: isCurrentPlayer ? 'rgba(255, 107, 53, 0.15)' : undefined,
+                    borderLeft: isCurrentPlayer ? '4px solid' : undefined,
+                    borderColor: 'primary.main',
                     '& td': isCurrentPlayer ? { fontWeight: 700 } : undefined,
                   }}
                   hover
                 >
-                  <TableCell>
+                  <TableCell align="center" sx={{ verticalAlign: 'middle' }}>
                     {entry.rank <= 3 ? (
-                      <Typography fontSize={18}>
+                      <Box component="span" sx={{ fontSize: 18, lineHeight: 1, display: 'inline-block' }}>
                         {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
-                      </Typography>
+                      </Box>
                     ) : (
                       entry.rank
                     )}
@@ -95,14 +97,15 @@ export default function LeaderboardWidget() {
                       <Chip label="You" size="small" color="primary" sx={{ ml: 1 }} />
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
                     <Chip
                       label={entry.tierName}
                       size="small"
                       sx={{
-                        bgcolor: TIER_COLORS[entry.tierName],
-                        color: '#000',
-                        fontWeight: 600,
+                        bgcolor: `${TIER_COLORS[entry.tierName]}33`,
+                        color: TIER_COLORS[entry.tierName],
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
                       }}
                     />
                   </TableCell>
@@ -124,23 +127,26 @@ export default function LeaderboardWidget() {
                 </TableRow>
                 <TableRow
                   sx={{
-                    bgcolor: 'rgba(108, 99, 255, 0.15)',
+                    bgcolor: 'rgba(255, 107, 53, 0.15)',
+                    borderLeft: '4px solid',
+                    borderColor: 'primary.main',
                     '& td': { fontWeight: 700 },
                   }}
                 >
-                  <TableCell>{data.playerRank.rank}</TableCell>
+                  <TableCell align="center" sx={{ verticalAlign: 'middle' }}>{data.playerRank.rank}</TableCell>
                   <TableCell>
                     {data.playerRank.displayName}
                     <Chip label="You" size="small" color="primary" sx={{ ml: 1 }} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
                     <Chip
                       label={data.playerRank.tierName}
                       size="small"
                       sx={{
-                        bgcolor: TIER_COLORS[data.playerRank.tierName],
-                        color: '#000',
-                        fontWeight: 600,
+                        bgcolor: `${TIER_COLORS[data.playerRank.tierName]}33`,
+                        color: TIER_COLORS[data.playerRank.tierName],
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
                       }}
                     />
                   </TableCell>

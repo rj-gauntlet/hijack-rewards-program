@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
+import { NotificationStreamService } from './notification-stream.service';
 import type { Notification, NotificationType } from '../common/types';
 import { randomUUID } from 'crypto';
 
@@ -7,7 +8,10 @@ import { randomUUID } from 'crypto';
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly dynamo: DynamoService) {}
+  constructor(
+    private readonly dynamo: DynamoService,
+    private readonly streamService: NotificationStreamService,
+  ) {}
 
   async createNotification(
     playerId: string,
@@ -27,6 +31,8 @@ export class NotificationsService {
 
     await this.dynamo.put(TABLE_NAMES.NOTIFICATIONS, notification as unknown as Record<string, unknown>);
 
+    this.streamService.push(playerId, notification);
+
     this.logger.log(`Notification created for ${playerId}: [${type}] ${title}`);
     return notification;
   }
@@ -42,7 +48,9 @@ export class NotificationsService {
       { scanIndexForward: false },
     );
 
-    const notifications = items as unknown as Notification[];
+    const notifications = (items as unknown as Notification[]).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
     if (unreadOnly) {

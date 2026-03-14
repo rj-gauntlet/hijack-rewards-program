@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
+import { RedisService } from '../redis/redis.service';
 import { TIER_NAMES, Tier } from '../common/constants/tiers';
 import type { PlayerRewards } from '../common/types';
 
@@ -25,18 +26,39 @@ export interface LeaderboardResult {
 
 @Injectable()
 export class LeaderboardService {
-  constructor(private readonly dynamo: DynamoService) {}
+  constructor(
+    private readonly dynamo: DynamoService,
+    private readonly redis: RedisService,
+  ) {}
 
   async getLeaderboard(
     limit: number = 10,
     requestingPlayerId?: string,
   ): Promise<LeaderboardResult> {
+    if (this.redis.isEnabled()) {
+      const cached = await this.redis.getLeaderboardCache();
+      if (cached) {
+        const entries = cached.entries as LeaderboardEntry[];
+        const topN = entries.slice(0, limit);
+        let playerRank: LeaderboardEntry | null = null;
+        if (requestingPlayerId) {
+          const found = entries.find((e) => e.playerId === requestingPlayerId);
+          if (found) playerRank = found;
+        }
+        return {
+          entries: topN,
+          totalPlayers: cached.totalPlayers,
+          playerRank,
+        };
+      }
+    }
+
     const allPlayers = await this.dynamo.scan(TABLE_NAMES.PLAYERS);
     const players = allPlayers as unknown as PlayerRewards[];
 
     const sorted = players.sort((a, b) => b.monthlyPoints - a.monthlyPoints);
 
-    const ranked = sorted.map((p, index) => ({
+    const ranked: LeaderboardEntry[] = sorted.map((p, index) => ({
       rank: index + 1,
       playerId: p.playerId,
       displayName: p.displayName,
@@ -45,14 +67,18 @@ export class LeaderboardService {
       monthlyPoints: p.monthlyPoints,
     }));
 
-    const topN = ranked.slice(0, limit);
+    if (this.redis.isEnabled()) {
+      await this.redis.setLeaderboardCache({
+        entries: ranked,
+        totalPlayers: players.length,
+      });
+    }
 
+    const topN = ranked.slice(0, limit);
     let playerRank: LeaderboardEntry | null = null;
     if (requestingPlayerId) {
       const playerEntry = ranked.find((e) => e.playerId === requestingPlayerId);
-      if (playerEntry) {
-        playerRank = playerEntry;
-      }
+      if (playerEntry) playerRank = playerEntry;
     }
 
     return {

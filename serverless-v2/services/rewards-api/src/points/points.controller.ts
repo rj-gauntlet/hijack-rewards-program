@@ -7,6 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { PointsService } from './points.service';
 import { AwardPointsDto } from './dto/award-points.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -19,6 +20,8 @@ export class PointsController {
   constructor(private readonly pointsService: PointsService) {}
 
   @Post('points/award')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @ApiOperation({
     summary: 'Award points for a hand',
     description:

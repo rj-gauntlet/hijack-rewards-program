@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { calculatePoints } from './points-calculator';
@@ -29,6 +29,19 @@ export class PointsService {
 
   async awardPoints(input: AwardPointsInput): Promise<AwardPointsResult> {
     const monthKey = getCurrentMonthKey();
+
+    // Query newest-first; Limit is items *read* before filter, so read recent batch to catch duplicate handId
+    const existingWithHandId = await this.dynamo.query(
+      TABLE_NAMES.TRANSACTIONS,
+      'playerId = :pid',
+      { ':pid': input.playerId, ':hid': input.handId },
+      { filterExpression: 'handId = :hid', scanIndexForward: false, limit: 500 },
+    );
+    if (existingWithHandId.length > 0) {
+      throw new ConflictException(
+        `Points already awarded for handId ${input.handId} (player ${input.playerId}). Duplicate request rejected.`,
+      );
+    }
 
     let player = await this.getOrCreatePlayer(input.playerId, monthKey);
 
@@ -130,6 +143,7 @@ export class PointsService {
 
     return {
       playerId: player.playerId as string,
+      displayName: (player.displayName as string) || (player.playerId as string),
       currentTier,
       tierName: TIER_NAMES[currentTier],
       monthlyPoints,

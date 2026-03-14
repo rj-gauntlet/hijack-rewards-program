@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { NotificationStreamService } from './notification-stream.service';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
 
 const mockDynamo = {
@@ -8,6 +9,11 @@ const mockDynamo = {
   put: jest.fn(),
   update: jest.fn(),
   query: jest.fn(),
+};
+
+const mockStreamService = {
+  register: jest.fn(() => () => {}),
+  push: jest.fn(),
 };
 
 describe('NotificationsService', () => {
@@ -20,6 +26,7 @@ describe('NotificationsService', () => {
       providers: [
         NotificationsService,
         { provide: DynamoService, useValue: mockDynamo },
+        { provide: NotificationStreamService, useValue: mockStreamService },
       ],
     }).compile();
 
@@ -49,6 +56,22 @@ describe('NotificationsService', () => {
         TABLE_NAMES.NOTIFICATIONS,
         expect.objectContaining({ playerId: 'player-001', type: 'tier_upgrade' }),
       );
+    });
+
+    it('pushes the new notification to the stream for real-time delivery', async () => {
+      mockDynamo.put.mockResolvedValue(undefined);
+
+      const result = await service.createNotification(
+        'player-002',
+        'milestone',
+        '100 points!',
+        'You hit 100 points this month.',
+      );
+
+      expect(mockStreamService.push).toHaveBeenCalledTimes(1);
+      expect(mockStreamService.push).toHaveBeenCalledWith('player-002', result);
+      expect(result.type).toBe('milestone');
+      expect(result.title).toBe('100 points!');
     });
   });
 

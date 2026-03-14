@@ -1,10 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeaderboardService } from './leaderboard.service';
 import { DynamoService } from '../dynamo/dynamo.service';
+import { RedisService } from '../redis/redis.service';
 import { Tier } from '../common/constants/tiers';
 
 const mockDynamo = {
   scan: jest.fn(),
+};
+
+const mockRedis = {
+  isEnabled: jest.fn(() => false),
+  getLeaderboardCache: jest.fn(),
+  setLeaderboardCache: jest.fn(),
 };
 
 const makePlayers = () => [
@@ -20,11 +27,13 @@ describe('LeaderboardService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockRedis.isEnabled.mockReturnValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LeaderboardService,
         { provide: DynamoService, useValue: mockDynamo },
+        { provide: RedisService, useValue: mockRedis },
       ],
     }).compile();
 
@@ -105,6 +114,30 @@ describe('LeaderboardService', () => {
       expect(result.entries).toHaveLength(0);
       expect(result.totalPlayers).toBe(0);
       expect(result.playerRank).toBeNull();
+    });
+
+    it('returns cached leaderboard when Redis is enabled and cache hit', async () => {
+      mockRedis.isEnabled.mockReturnValue(true);
+      mockRedis.getLeaderboardCache.mockResolvedValue({
+        entries: [
+          { rank: 1, playerId: 'p2', displayName: 'Bob', currentTier: 4, tierName: 'Platinum', monthlyPoints: 12000 },
+          { rank: 2, playerId: 'p5', displayName: 'Eve', currentTier: 3, tierName: 'Gold', monthlyPoints: 5000 },
+          { rank: 3, playerId: 'p1', displayName: 'Alice', currentTier: 3, tierName: 'Gold', monthlyPoints: 3000 },
+          { rank: 4, playerId: 'p3', displayName: 'Charlie', currentTier: 2, tierName: 'Silver', monthlyPoints: 800 },
+          { rank: 5, playerId: 'p4', displayName: 'Diana', currentTier: 1, tierName: 'Bronze', monthlyPoints: 200 },
+        ],
+        totalPlayers: 5,
+      });
+
+      const result = await service.getLeaderboard(2, 'p4');
+
+      expect(mockDynamo.scan).not.toHaveBeenCalled();
+      expect(result.entries).toHaveLength(2);
+      expect(result.entries[0].playerId).toBe('p2');
+      expect(result.totalPlayers).toBe(5);
+      expect(result.playerRank).not.toBeNull();
+      expect(result.playerRank!.playerId).toBe('p4');
+      expect(result.playerRank!.rank).toBe(5);
     });
   });
 

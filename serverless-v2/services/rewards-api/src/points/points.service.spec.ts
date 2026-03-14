@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { PointsService } from './points.service';
 import { DynamoService, TABLE_NAMES } from '../dynamo/dynamo.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -60,6 +60,22 @@ describe('PointsService', () => {
   });
 
   describe('awardPoints', () => {
+    beforeEach(() => {
+      mockDynamo.query.mockResolvedValue([]);
+    });
+
+    it('throws ConflictException when the same handId was already awarded', async () => {
+      mockDynamo.query.mockResolvedValue([{ playerId: 'player-001', handId: 'hand-001' }]);
+
+      await expect(service.awardPoints(makeInput({ handId: 'hand-001' }))).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.awardPoints(makeInput({ handId: 'hand-001' }))).rejects.toThrow(
+        'Duplicate request rejected',
+      );
+      expect(mockDynamo.put).not.toHaveBeenCalled();
+    });
+
     it('creates a new player if not found and awards points', async () => {
       mockDynamo.get.mockResolvedValue(null);
       mockDynamo.put.mockResolvedValue(undefined);

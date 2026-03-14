@@ -22,6 +22,13 @@ const TIER_LABELS: Record<number, string> = {
   4: 'Platinum',
 };
 
+const TIER_COLORS: Record<string, string> = {
+  Bronze: '#CD7F32',
+  Silver: '#C0C0C0',
+  Gold: '#ff6b35',
+  Platinum: '#D4E8F7',
+};
+
 export default function PointsHistory() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -53,7 +60,7 @@ export default function PointsHistory() {
 
   return (
     <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" fontWeight={600} mb={2}>
+      <Typography variant="h6" fontWeight={700} mb={2} sx={{ textTransform: 'uppercase', letterSpacing: '0.12em' }}>
         Points History
       </Typography>
 
@@ -65,17 +72,17 @@ export default function PointsHistory() {
         </Box>
       ) : (
         <>
-          <TableContainer>
-            <Table size="small">
+          <TableContainer sx={{ overflowX: 'hidden' }}>
+            <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Table</TableCell>
-                  <TableCell>Stakes</TableCell>
-                  <TableCell align="right">Base</TableCell>
-                  <TableCell align="right">Multiplier</TableCell>
-                  <TableCell align="right">Earned</TableCell>
-                  <TableCell>Tier</TableCell>
+                  <TableCell sx={{ width: '11%' }}>Date</TableCell>
+                  <TableCell sx={{ width: '16%' }}>Table</TableCell>
+                  <TableCell sx={{ width: '11%' }}>Stakes</TableCell>
+                  <TableCell align="right" sx={{ width: '10%' }}>Base</TableCell>
+                  <TableCell align="right" sx={{ width: '11%' }}>Mult</TableCell>
+                  <TableCell align="right" sx={{ width: '11%' }}>Earned</TableCell>
+                  <TableCell align="center" sx={{ width: '20%', minWidth: 84, overflow: 'visible', whiteSpace: 'nowrap' }}>Tier</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -84,10 +91,14 @@ export default function PointsHistory() {
                     <TableCell>
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 120 }}>
+                    <TableCell sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <Typography variant="body2" noWrap component="span">
                         {tx.type === 'admin_adjust' ? (
-                          <Chip label="Admin" size="small" color="warning" />
+                          <Chip
+                            label="Admin"
+                            size="small"
+                            sx={{ bgcolor: '#5C6BC0', color: '#fff', fontWeight: 600 }}
+                          />
                         ) : (
                           tx.tableId
                         )}
@@ -97,15 +108,25 @@ export default function PointsHistory() {
                     <TableCell align="right">{tx.basePoints}</TableCell>
                     <TableCell align="right">{tx.multiplier}x</TableCell>
                     <TableCell align="right">
-                      <Typography fontWeight={600} color="primary.main">
-                        +{tx.earnedPoints}
+                      <Typography
+                        fontWeight={600}
+                        color={tx.earnedPoints >= 0 ? 'primary.main' : 'error'}
+                      >
+                        {tx.earnedPoints >= 0 ? `+${tx.earnedPoints}` : tx.earnedPoints}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="center" sx={{ overflow: 'visible', whiteSpace: 'nowrap' }}>
                       <Chip
                         label={TIER_LABELS[tx.playerTier] || 'Unknown'}
                         size="small"
-                        variant="outlined"
+                        sx={{
+                          bgcolor: TIER_COLORS[TIER_LABELS[tx.playerTier]]
+                            ? `${TIER_COLORS[TIER_LABELS[tx.playerTier]]}33`
+                            : 'rgba(255,255,255,0.15)',
+                          color: TIER_COLORS[TIER_LABELS[tx.playerTier]] || 'rgba(255,255,255,0.9)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
                       />
                     </TableCell>
                   </TableRow>
