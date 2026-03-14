@@ -218,4 +218,17 @@ export class PointsService {
       currentMonthKey: newMonthKey,
     };
   }
+
+  async getTierHistory(
+    playerId: string,
+  ): Promise<Array<{ monthKey: string; tier: Tier; monthlyPoints: number }>> {
+    const items = await this.dynamo.query(
+      TABLE_NAMES.TIER_HISTORY,
+      'playerId = :pid',
+      { ':pid': playerId },
+      { scanIndexForward: false },
+    );
+
+    return items as unknown as Array<{ monthKey: string; tier: Tier; monthlyPoints: number }>;
+  }
 }

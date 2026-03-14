@@ -131,3 +131,21 @@
 - **Files Modified:**
   - `src/app.module.ts` — Added LeaderboardModule and AdminModule
 - **Notes:** The leaderboard uses scan-on-read (acceptable for demo scale). Admin endpoints are fully role-guarded — non-admin tokens get 403 Forbidden. Tier override stores the override object on the player record for audit purposes.
+
+## Phase 5: Full Dashboard — 2026-03-14
+- **Status:** Complete
+- **Deliverables:** 6/7 complete (RTL tests deferred to Phase 6)
+- **Tests:** 168 total passing (no new backend tests; frontend type-checked clean)
+- **Deviations:**
+  - React Testing Library tests deferred to Phase 6 — requires installing testing dependencies. (minor)
+- **Backend Files Modified:**
+  - `src/points/points.controller.ts` — Added `GET /api/v1/player/tier-history` endpoint
+  - `src/points/points.service.ts` — Added `getTierHistory()` method
+- **Frontend Files Created:**
+  - `src/components/LeaderboardWidget.tsx` — Top 10 table, medal emojis for top 3, player's own rank highlighted even if outside top N
+  - `src/components/TierTimeline.tsx` — Vertical bar chart showing tier level over last 6 months with tier-specific colors
+  - `src/components/NotificationBell.tsx` — Badge with unread count, popover dropdown, type-colored chips, dismiss functionality
+- **Frontend Files Modified:**
+  - `src/api/rewardsApi.ts` — Added leaderboard, notifications (query + dismiss mutation), and tier-history endpoints
+  - `src/pages/Dashboard.tsx` — 2-column responsive grid layout with all 4 widgets + notification bell in header
+- **Notes:** Dashboard layout uses MUI Grid: left column (7/12) for SummaryCard + PointsHistory, right column (5/12) for LeaderboardWidget + TierTimeline. NotificationBell uses RTK Query mutation to dismiss notifications with automatic cache invalidation.

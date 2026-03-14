@@ -32,6 +32,42 @@ export interface PointsTransaction {
   createdAt: string;
 }
 
+export interface LeaderboardEntry {
+  rank: number;
+  playerId: string;
+  displayName: string;
+  currentTier: number;
+  tierName: string;
+  monthlyPoints: number;
+}
+
+export interface LeaderboardResult {
+  entries: LeaderboardEntry[];
+  totalPlayers: number;
+  playerRank: LeaderboardEntry | null;
+}
+
+export interface PlayerNotification {
+  playerId: string;
+  notificationId: string;
+  type: 'tier_upgrade' | 'tier_downgrade' | 'milestone';
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsResult {
+  notifications: PlayerNotification[];
+  unreadCount: number;
+}
+
+export interface TierHistoryEntry {
+  monthKey: string;
+  tier: number;
+  monthlyPoints: number;
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -58,7 +94,7 @@ export const rewardsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Rewards', 'History'],
+  tagTypes: ['Rewards', 'History', 'Leaderboard', 'Notifications', 'TierHistory'],
   endpoints: (builder) => ({
     getRewardsSummary: builder.query<RewardsSummary, void>({
       query: () => 'player/rewards',
@@ -71,7 +107,37 @@ export const rewardsApi = createApi({
       transformResponse: (response: ApiResponse<PaginatedData<PointsTransaction>>) => response.data,
       providesTags: ['History'],
     }),
+    getLeaderboard: builder.query<LeaderboardResult, { limit?: number }>({
+      query: ({ limit = 10 }) => `leaderboard?limit=${limit}`,
+      transformResponse: (response: ApiResponse<LeaderboardResult>) => response.data,
+      providesTags: ['Leaderboard'],
+    }),
+    getNotifications: builder.query<NotificationsResult, { unread?: boolean }>({
+      query: ({ unread = false }) =>
+        `player/notifications${unread ? '?unread=true' : ''}`,
+      transformResponse: (response: ApiResponse<NotificationsResult>) => response.data,
+      providesTags: ['Notifications'],
+    }),
+    dismissNotification: builder.mutation<void, string>({
+      query: (notificationId) => ({
+        url: `player/notifications/${notificationId}/dismiss`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Notifications'],
+    }),
+    getTierHistory: builder.query<TierHistoryEntry[], void>({
+      query: () => 'player/tier-history',
+      transformResponse: (response: ApiResponse<TierHistoryEntry[]>) => response.data,
+      providesTags: ['TierHistory'],
+    }),
   }),
 });
 
-export const { useGetRewardsSummaryQuery, useGetPointsHistoryQuery } = rewardsApi;
+export const {
+  useGetRewardsSummaryQuery,
+  useGetPointsHistoryQuery,
+  useGetLeaderboardQuery,
+  useGetNotificationsQuery,
+  useDismissNotificationMutation,
+  useGetTierHistoryQuery,
+} = rewardsApi;

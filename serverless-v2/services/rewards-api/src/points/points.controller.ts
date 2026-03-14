@@ -68,4 +68,17 @@ export class PointsController {
     );
     return createSuccessResponse(result);
   }
+
+  @Get('player/tier-history')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiSecurity('X-Player-Id')
+  @ApiOperation({
+    summary: 'Get tier history',
+    description: 'Returns the authenticated player\'s tier history (monthly snapshots).',
+  })
+  async getTierHistory(@CurrentPlayer() player: AuthenticatedPlayer) {
+    const result = await this.pointsService.getTierHistory(player.playerId);
+    return createSuccessResponse(result);
+  }
 }
