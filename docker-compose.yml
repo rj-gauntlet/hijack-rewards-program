@@ -348,22 +348,24 @@ services:
     working_dir: /app
     volumes:
       - ./serverless-v2/services/streaks-api:/app
-      - ./serverless-v2/shared:/app/shared
     depends_on:
       dynamodb-local:
         condition: service_healthy
     environment:
       STAGE: local
+      PORT: "5001"
       DYNAMODB_ENDPOINT: http://dynamodb-local:8000
       STREAKS_PLAYERS_TABLE: streaks-players
       STREAKS_ACTIVITY_TABLE: streaks-activity
+      STREAKS_REWARDS_TABLE: streaks-rewards
+      STREAKS_FREEZE_HISTORY_TABLE: streaks-freeze-history
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        npm install && npx serverless offline --config serverless.offline.yml --host 0.0.0.0
+        npm install && npm run build && npm run start:prod
 
   streaks-frontend:
     image: node:22-alpine
